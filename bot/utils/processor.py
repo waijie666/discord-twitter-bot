@@ -339,7 +339,9 @@ class Processor:
             )
             try:
                 webhook.send(
-                    embed=self.embed, content=self.discord_config.get("custom_message", None)
+                    content="https://twitter.com/{}/status/{}".format(
+                        self.status_tweet["user"]["screen_name"], self.status_tweet["id_str"]
+                    )
                 )
             except discord.errors.NotFound as error:
                 print(
