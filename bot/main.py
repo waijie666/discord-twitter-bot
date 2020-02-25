@@ -6,6 +6,7 @@ from time import gmtime, strftime
 from time import sleep
 import urllib3
 import requests
+from collections import deque
 
 try:
     from utils.processor import Processor
@@ -29,6 +30,8 @@ class StdOutListener(StreamListener):
     def __init__(self, api=None):
         super().__init__(api)
         self.config_discord = config["Discord"]
+        for data_discord in self.config_discord:
+            data_discord["tweet_queue"] = deque(maxlen=50)
 
     def _on_status(self, status):
         data = status._json
@@ -50,15 +53,25 @@ class StdOutListener(StreamListener):
             if p.blackword_set_present():
                 continue
 
+            if 'retweeted_status' in data:
+                if data['retweeted_status']['id_str'] in data_discord['tweet_queue']:
+                    continue
+                else:
+                    data_discord['tweet_queue'].append(data['retweeted_status']["id_str"])
+            else:
+                data_discord['tweet_queue'].append(data["id_str"])
+
             for wh_url in data_discord.get("webhook_urls", []):
-                p.create_embed()
-                p.attach_media()
+                #p.create_embed()
+                #p.attach_media()
 
                 p.send_message(wh_url)
 
                 print(
                     strftime("[%Y-%m-%d %H:%M:%S]", gmtime()),
-                    data["user"]["screen_name"],
+                    "https://twitter.com/{}/status/{}".format(
+                        data["user"]["screen_name"], data["id_str"]
+                    ),
                     "twittered.",
                 )
 
@@ -106,7 +119,7 @@ if __name__ == "__main__":
                 f"Sleeping for 1 minute then continuing.\n"
                 f"-----------------------"
             )
-            sleep(600)
+            sleep(60)
 
         try:
             stream.filter(follow=follow, track=track, locations=location)
@@ -130,4 +143,4 @@ if __name__ == "__main__":
                 f"Twitter streaming continues.\n"
                 f"-----------------------"
             )
-            sleep(3000)
+            sleep(60)
