@@ -1,0 +1,12 @@
+FROM python:3.8.1-slim
+
+COPY requirements_waijie.txt /app/
+
+WORKDIR /app
+
+RUN pip install -r requirements_waijie.txt
+
+COPY bot /app/bot
+
+CMD ["python", "-u", "bot/main.py"]
+
